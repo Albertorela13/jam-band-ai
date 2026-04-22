@@ -2,7 +2,9 @@ import { useState, type ReactNode } from "react";
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { AppDialogsProvider } from "@/components/layout/AppDialogs";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
+import { ApiKeyMissingDialog } from "@/components/settings/ApiKeyMissingDialog";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -10,26 +12,37 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [keyPromptOpen, setKeyPromptOpen] = useState(false);
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar onOpenSettings={() => setSettingsOpen(true)} />
+      <AppDialogsProvider
+        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenKeyPrompt={() => setKeyPromptOpen(true)}
+      >
+        <div className="flex min-h-screen w-full bg-background">
+          <AppSidebar onOpenSettings={() => setSettingsOpen(true)} />
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-12 items-center border-b border-border/60 bg-background/80 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-          </header>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="flex h-12 items-center border-b border-border/60 bg-background/80 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+            </header>
 
-          <main className="flex-1">
-            <div className="mx-auto w-full max-w-[1200px] px-6 py-8 md:px-10 md:py-12">
-              {children}
-            </div>
-          </main>
+            <main className="flex-1">
+              <div className="mx-auto w-full max-w-[1200px] px-6 py-8 md:px-10 md:py-12">
+                {children}
+              </div>
+            </main>
+          </div>
+
+          <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+          <ApiKeyMissingDialog
+            open={keyPromptOpen}
+            onOpenChange={setKeyPromptOpen}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
         </div>
-
-        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
-      </div>
+      </AppDialogsProvider>
     </SidebarProvider>
   );
 }
