@@ -75,7 +75,7 @@ export function EmptyStageIllustration({ className }: { className?: string }) {
           fill="hsl(var(--card))"
         />
 
-        {/* Jam jar */}
+        {/* Center bubble glyph */}
         <g transform="translate(140 60)">
           {/* Lid */}
           <rect
