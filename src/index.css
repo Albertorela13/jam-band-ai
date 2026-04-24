@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
-  Jam Session design tokens.
+  AskUsers design tokens.
   All colors HSL. Warm, cheerful, jam-jar palette.
 */
 
@@ -63,7 +63,7 @@
     --sidebar-ring: 40 88% 60%;
   }
 
-  /* No dark mode — Jam Session is cream-only by design */
+  /* No dark mode — AskUsers is cream-only by design */
 }
 
 @layer base {

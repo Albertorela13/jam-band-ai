@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Music2, Check, AlertCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Check, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -133,10 +133,10 @@ const RunTest = () => {
     return (
       <div className="mx-auto max-w-2xl space-y-6 py-10 text-center">
         <h1 className="font-display text-4xl font-semibold tracking-tight">
-          No bandmates yet
+          Your panel is empty
         </h1>
         <p className="text-muted-foreground">
-          Build at least one persona before running a jam session.
+          Add at least one persona before running a session.
         </p>
         <Button size="lg" onClick={() => navigate("/persona/new")} className="rounded-[10px]">
           Create your first persona
@@ -157,7 +157,7 @@ const RunTest = () => {
           Back to Panel
         </button>
         <h1 className="font-display text-4xl font-semibold tracking-tight md:text-5xl">
-          Run a jam session
+          Run a session
         </h1>
         <p className="mt-2 text-base text-muted-foreground">
           Describe what you're testing. Your panel will react in character.
@@ -237,7 +237,7 @@ const RunTest = () => {
           <div className="space-y-3 rounded-2xl border border-border bg-card p-5 shadow-warm">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium text-foreground">
-                Jam in progress…
+                Session in progress…
               </span>
               <span className="text-muted-foreground">
                 {completedCount} of {totalCount} done
@@ -295,8 +295,8 @@ const RunTest = () => {
               </>
             ) : (
               <>
-                <Music2 className="h-4 w-4" />
-                Start the jam
+                <Sparkles className="h-4 w-4" />
+                Run session
               </>
             )}
           </Button>

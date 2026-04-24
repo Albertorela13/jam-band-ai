@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Calendar, History as HistoryIcon, Music2 } from "lucide-react";
+import { ArrowRight, Calendar, History as HistoryIcon, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ReactionBadge } from "@/components/test/ReactionBadge";
@@ -30,7 +30,7 @@ const HistoryPage = () => {
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="space-y-2">
           <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
-            Jam history
+            Session history
           </h1>
           <p className="max-w-xl text-base text-muted-foreground">
             Every session your panel has weighed in on, newest first.
@@ -42,8 +42,8 @@ const HistoryPage = () => {
             onClick={() => navigate("/test/new")}
             className="rounded-[10px] px-6 text-base transition-transform duration-200 ease-bounce hover:scale-[1.02]"
           >
-            <Music2 className="h-4 w-4" />
-            Run a new jam
+            <Sparkles className="h-4 w-4" />
+            Run a new session
           </Button>
         )}
       </header>
@@ -208,12 +208,12 @@ function EmptyState({
       </span>
       <div className="space-y-2">
         <h2 className="font-display text-2xl font-semibold tracking-tight">
-          No jams yet
+          No sessions yet
         </h2>
         <p className="max-w-md text-sm text-muted-foreground">
           {hasPersonas
             ? "Run your first session and the panel's reactions will land here."
-            : "Build a persona, then run a session — past jams will live here."}
+            : "Build a persona, then run a session — past sessions will live here."}
         </p>
       </div>
       <Button
@@ -223,8 +223,8 @@ function EmptyState({
       >
         {hasPersonas ? (
           <>
-            <Music2 className="h-4 w-4" />
-            Start a jam
+            <Sparkles className="h-4 w-4" />
+            Start a session
           </>
         ) : (
           "Create your first persona"

@@ -1,6 +1,7 @@
 /**
- * Jam Session — localStorage data layer.
- * Single root key: `jam-session-data`.
+ * AskUsers — localStorage data layer.
+ * Single root key: `askusers-data` (with one-time migration from
+ * the legacy `jam-session-data` key for existing users).
  */
 
 export type Reaction = "loves" | "likes" | "mixed" | "rejects";
@@ -58,7 +59,8 @@ export interface JamData {
   settings: Settings;
 }
 
-const ROOT_KEY = "jam-session-data";
+const ROOT_KEY = "askusers-data";
+const LEGACY_ROOT_KEY = "jam-session-data";
 export const MAX_PERSONAS = 6;
 
 const DEFAULT_DATA: JamData = {
@@ -73,7 +75,16 @@ const DEFAULT_DATA: JamData = {
 function read(): JamData {
   if (typeof window === "undefined") return structuredClone(DEFAULT_DATA);
   try {
-    const raw = window.localStorage.getItem(ROOT_KEY);
+    let raw = window.localStorage.getItem(ROOT_KEY);
+    // One-time migration from legacy "jam-session-data" key
+    if (!raw) {
+      const legacy = window.localStorage.getItem(LEGACY_ROOT_KEY);
+      if (legacy) {
+        window.localStorage.setItem(ROOT_KEY, legacy);
+        window.localStorage.removeItem(LEGACY_ROOT_KEY);
+        raw = legacy;
+      }
+    }
     if (!raw) return structuredClone(DEFAULT_DATA);
     const parsed = JSON.parse(raw) as Partial<JamData>;
     return {

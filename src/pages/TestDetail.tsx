@@ -30,7 +30,7 @@ const TestDetail = () => {
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl py-10 text-muted-foreground">
-        Loading the jam…
+        Loading session…
       </div>
     );
   }
@@ -39,7 +39,7 @@ const TestDetail = () => {
     return (
       <div className="mx-auto max-w-2xl space-y-6 py-16 text-center">
         <h1 className="font-display text-4xl font-semibold tracking-tight">
-          That jam's gone missing
+          Session not found
         </h1>
         <p className="text-muted-foreground">
           We couldn't find a session with that id. It may have been deleted.
@@ -49,7 +49,7 @@ const TestDetail = () => {
             Back to history
           </Button>
           <Button onClick={() => navigate("/test/new")} className="rounded-[10px]">
-            Run a new jam
+            Run a new session
           </Button>
         </div>
       </div>
@@ -87,7 +87,7 @@ const TestDetail = () => {
               </span>
             </div>
             <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight md:text-4xl">
-              The jam
+              The feature
             </h1>
             <blockquote className="border-l-[3px] border-primary pl-4 text-base leading-relaxed text-foreground/90">
               {test.feature_description}
@@ -105,7 +105,7 @@ const TestDetail = () => {
             className="rounded-[10px]"
           >
             <RotateCcw className="h-4 w-4" />
-            Run another jam
+            Run another session
           </Button>
         </div>
       </header>

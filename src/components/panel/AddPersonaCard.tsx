@@ -15,7 +15,7 @@ export function AddPersonaCard({ onClick }: AddPersonaCardProps) {
       </span>
       <div>
         <p className="font-display text-lg font-semibold text-foreground">Add persona</p>
-        <p className="mt-1 text-sm text-muted-foreground">Bring a new bandmate on stage.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Add another voice to your panel.</p>
       </div>
     </button>
   );

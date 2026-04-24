@@ -117,7 +117,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     const a = document.createElement("a");
     const date = new Date().toISOString().slice(0, 10);
     a.href = url;
-    a.download = `jam-session-export-${date}.json`;
+    a.download = `askusers-export-${date}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -147,7 +147,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         toast.success("Data imported.");
       }
     } catch {
-      toast.error("Couldn't read that file. Is it a Jam Session export?");
+      toast.error("Couldn't read that file. Is it an AskUsers export?");
     }
   };
 

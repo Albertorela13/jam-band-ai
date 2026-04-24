@@ -1,6 +1,6 @@
 /**
- * Hand-coded SVG: three "seat" outlines arranged like a band setup,
- * with the Jam Session jar/note glyph in the middle.
+ * Hand-coded SVG: three "seat" outlines arranged like a research panel,
+ * with a smiling speech-bubble glyph in the center seat.
  * Cream + amber + coral, no external assets.
  */
 export function EmptyStageIllustration({ className }: { className?: string }) {
@@ -10,7 +10,7 @@ export function EmptyStageIllustration({ className }: { className?: string }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="An empty stage with three open seats"
+      aria-label="An empty panel with three open seats"
       className={className}
     >
       {/* Stage floor */}
@@ -75,7 +75,7 @@ export function EmptyStageIllustration({ className }: { className?: string }) {
           fill="hsl(var(--card))"
         />
 
-        {/* Jam jar */}
+        {/* Center bubble glyph */}
         <g transform="translate(140 60)">
           {/* Lid */}
           <rect
