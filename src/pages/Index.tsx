@@ -28,7 +28,7 @@ const Index = () => {
 
   const handleAddPersona = () => {
     if (isFull) {
-      toast("Six bandmates max — any more and it stops being a jam session.");
+      toast("Six personas max — keeps the panel focused.");
       return;
     }
     navigate("/persona/new");
@@ -41,7 +41,7 @@ const Index = () => {
       onClick={() => navigate("/test/new")}
       className="rounded-[10px] px-6 text-base transition-transform duration-200 ease-bounce hover:scale-[1.02] disabled:opacity-50"
     >
-      Run a jam session
+      Run a session
       <ArrowRight className="h-4 w-4" />
     </Button>
   );
@@ -54,7 +54,7 @@ const Index = () => {
             Your Panel
           </h1>
           <p className="max-w-xl text-base text-muted-foreground">
-            Up to six user personas ready to jam on your next feature.
+            Up to six user personas ready to react to your next feature.
           </p>
         </div>
 

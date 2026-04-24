@@ -1,4 +1,4 @@
-import { History, Music2, Settings as SettingsIcon, Users } from "lucide-react";
+import { History, Settings as SettingsIcon, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
@@ -24,6 +24,61 @@ const navItems = [
   { title: "History", url: "/history", icon: History, match: (p: string) => p === "/history" || /^\/test\/(?!new)/.test(p) },
 ];
 
+/**
+ * AskUsers brand mark — a smiling speech-bubble face with five colored
+ * "spark" rays above it. Pure inline SVG, palette tokens only.
+ */
+function AskUsersMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-hidden="true"
+      className={className}
+    >
+      {/* Spark rays — left to right: brick, coral, mustard, olive, ochre */}
+      <g strokeWidth="1.8" strokeLinecap="round">
+        <line x1="9.5" y1="6.5" x2="8" y2="3.5" stroke="hsl(var(--destructive))" />
+        <line x1="14" y1="4.5" x2="13.2" y2="1.2" stroke="hsl(var(--secondary))" />
+        <line x1="20" y1="4" x2="20" y2="0.8" stroke="hsl(var(--primary))" />
+        <line x1="26" y1="4.5" x2="26.8" y2="1.2" stroke="hsl(var(--success))" />
+        <line x1="30.5" y1="6.5" x2="32" y2="3.5" stroke="hsl(var(--warning))" />
+      </g>
+
+      {/* Speech bubble */}
+      <path
+        d="M8 14
+           Q8 9 13 9
+           H27
+           Q32 9 32 14
+           V24
+           Q32 29 27 29
+           H17
+           L12 34
+           L13 29
+           Q8 29 8 24
+           Z"
+        fill="hsl(var(--background))"
+        stroke="hsl(var(--foreground))"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+
+      {/* Smiling eyes */}
+      <path d="M14.5 17 q1.5 1.8 3 0" stroke="hsl(var(--foreground))" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+      <path d="M22.5 17 q1.5 1.8 3 0" stroke="hsl(var(--foreground))" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+
+      {/* Open smile */}
+      <path
+        d="M16 21 Q20 26 24 21 Z"
+        fill="hsl(var(--foreground))"
+      />
+    </svg>
+  );
+}
+
 export function AppSidebar({ onOpenSettings }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -36,14 +91,13 @@ export function AppSidebar({ onOpenSettings }: AppSidebarProps) {
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-2 text-left transition-transform duration-200 ease-bounce hover:scale-[1.02]"
-          aria-label="Jam Session — go to Panel"
+          aria-label="AskUsers — go to Panel"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-warm">
-            <Music2 className="h-4 w-4" strokeWidth={2.5} />
-          </span>
+          <AskUsersMark className="h-9 w-9 shrink-0" />
           {!collapsed && (
-            <span className="font-display text-xl font-bold italic leading-none tracking-tight">
-              Jam <span className="text-secondary">Session</span>
+            <span className="font-display text-xl font-semibold leading-none tracking-tight">
+              <span className="text-foreground">ASK</span>
+              <span className="text-primary">USERS</span>
             </span>
           )}
         </button>
@@ -93,7 +147,7 @@ export function AppSidebar({ onOpenSettings }: AppSidebarProps) {
       {!collapsed && (
         <SidebarFooter className="px-4 pb-5 pt-2">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Stress-test features against your personas.
+            Stress-test features against your users.
           </p>
         </SidebarFooter>
       )}

@@ -51,7 +51,7 @@ const PersonaEditor = () => {
   // Redirect if editing an unknown id
   useEffect(() => {
     if (id && !existing) {
-      toast("That persona has left the building.");
+      toast("That persona isn't in your panel anymore.");
       navigate("/", { replace: true });
     }
   }, [id, existing, navigate]);
@@ -82,7 +82,7 @@ const PersonaEditor = () => {
 
     // Enforce panel cap before spending an API call
     if (!isEditing && getPersonas().length >= MAX_PERSONAS) {
-      toast("Six bandmates max — any more and it stops being a jam session.");
+      toast("Six personas max — keeps the panel focused.");
       return;
     }
 
@@ -149,7 +149,7 @@ const PersonaEditor = () => {
       navigate("/");
     } catch (err) {
       if (err instanceof PanelFullError) {
-        toast.error("Six bandmates max — any more and it stops being a jam session.");
+        toast.error("Six personas max — keeps the panel focused.");
       } else {
         toast.error("Couldn't save. Try again?");
       }
@@ -159,7 +159,7 @@ const PersonaEditor = () => {
   const handleDelete = () => {
     if (!existing) return;
     deletePersona(existing.id);
-    toast(`${existing.name} stepped off the stage.`);
+    toast(`${existing.name} removed from your panel.`);
     navigate("/");
   };
 

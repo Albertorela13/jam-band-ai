@@ -24,7 +24,7 @@ export function ApiKeyMissingDialog({ open, onOpenChange, onOpenSettings }: ApiK
             <Sparkles className="h-5 w-5" />
           </div>
           <DialogTitle className="font-display text-2xl">
-            Pop in your API key to get jamming
+            Add your API key to start asking users
           </DialogTitle>
           <DialogDescription className="text-base text-muted-foreground">
             Head to Settings and add your Anthropic API key. It lives in your browser only.

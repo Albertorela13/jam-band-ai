@@ -1,47 +1,126 @@
+# Rename: Jam Session → AskUsers
 
-# Stage 1 — Foundations
+A pure rebrand pass. No layout changes, no functional changes — just naming, microcopy, the sidebar logo, and a new icon. Music metaphors swap for user‑research metaphors.
 
-Locking in the visual + structural skeleton before any features. After this stage you'll see an empty but warmly-themed app with the sidebar, all six routes registered (placeholders), and a complete localStorage utility ready to use.
+## Vocabulary swap (applied everywhere)
 
-## What I'll build
+| Old (music) | New (research) |
+|---|---|
+| Jam Session / jam session | AskUsers / session |
+| jam (noun, "the jam") | session / round |
+| jamming | running a session |
+| bandmate / bandmates | persona / personas (or "user" when natural) |
+| stage (as in "your stage", "stepped off the stage") | panel |
+| "Tune up" / "tuning up" | "Get ready" / "Setting up" |
+| "Start the jam" | "Run session" |
+| "Run a jam session" | "Run a session" |
+| "Jam history" | "Session history" |
+| "voices" (kept — already research-flavoured) | voices |
 
-**Theme (`src/index.css` + `tailwind.config.ts`)**
-- All palette colors as HSL CSS variables: cream `#FBF7F0` background, warm-near-black `#2A2520` foreground, mustard `#F4B940` primary, coral `#E8725C` secondary, olive `#6B8E4E` success, ochre `#D99B3A` warning, brick `#C75146` destructive, warm grey `#6B6459` muted-foreground, hairline `#E8DFD0` border, `#F5EFE3` subtle fill.
-- Custom shadow utility `shadow-warm` → `0 4px 20px rgba(42, 37, 32, 0.06)`.
-- Custom transition timing `ease-bounce` → `cubic-bezier(0.34, 1.56, 0.64, 1)`.
-- Border radius bumped: cards 14px, buttons 10px, pills 24px (via Tailwind extensions, leaving shadcn defaults intact where needed).
-- `body` defaults to Inter; `.font-display` class applies Fraunces.
+Cap of 6 personas stays — wording changes from *"Six bandmates max — any more and it stops being a jam session"* to *"Six personas max — keeps the panel focused."*
 
-**Fonts (`index.html`)**
-- Google Fonts link for Fraunces (400/500/600, italic) + Inter (400/500/600).
-- Update page title + meta description to reflect Jam Session.
+## New logo (sidebar)
 
-**Storage util (`src/lib/storage.ts`)**
-- Single root key `jam-session-data`.
-- TypeScript types: `Persona`, `TestResult`, `Test`, `Settings`, `JamData`.
-- Helpers: `getPersonas`, `savePersona` (insert or update by id, enforces 6-cap with throw), `deletePersona`, `getTests`, `saveTest`, `getTest(id)`, `getSettings`, `saveSettings`, `exportAll`, `importAll` (merge by id), `resetAll`.
-- Lazy-init with empty arrays + default settings (`model: "claude-sonnet-4-6"`, empty key) on first read.
+Replace the round amber `Music2` icon + *"Jam Session"* Fraunces wordmark in `src/components/layout/AppSidebar.tsx` with a small inline SVG that mirrors the uploaded mark:
 
-**App shell**
-- `src/components/layout/AppSidebar.tsx` — collapsible shadcn sidebar. Wordmark "Jam Session" in Fraunces bold italic + small `Music2` icon in amber. Nav items: Panel (`/`), History (`/history`). Settings as a button that opens a placeholder modal (real content in Stage 3). Footer tagline: "Stress-test features against your personas."
-- `src/components/layout/AppLayout.tsx` — wraps sidebar + main area, max-width 1200px, `p-8` minimum, header strip with `SidebarTrigger` always visible.
-- `src/App.tsx` — `BrowserRouter` with all six routes registered, all wrapped in `AppLayout`:
-  - `/` → Panel (placeholder: "Panel coming next")
-  - `/persona/new` and `/persona/:id` → placeholder
-  - `/test/new` and `/test/:id` → placeholder
-  - `/history` → placeholder
-  - `*` → existing `NotFound`
+- A rounded speech-bubble face (smiling eyes + open smile) in `--foreground` stroke
+- 5 short "spark" rays above it in the project palette: brick, coral, mustard, olive, ochre
+- Wordmark next to it: **ASK** in `--foreground`, **USERS** in `--primary` (mustard), set in Fraunces uppercase, semibold, slight tracking — keeps the playful jam-jar feel and reuses the existing palette tokens (no new colors needed)
+- Compact sizing so the collapsed sidebar shows just the bubble icon (same h-9 w-9 slot as today)
 
-**Tiny helper (`src/lib/avatar.ts`)**
-- `getAvatarUrl(seed)` returning the DiceBear lorelei URL with the warm background palette. Used everywhere from Stage 2 onward.
+Updated `aria-label` → "AskUsers — go to Panel".
 
-## What you'll review after Stage 1
-- Cream background + warm shadows feel jam-jar, not SaaS-grey
-- Fraunces wordmark reads playful, Inter body reads clean
-- Sidebar collapses cleanly, Settings button opens a stub
-- All six routes load placeholders without errors
-- (Under the hood) localStorage util works — I'll verify by writing/reading a dummy persona in dev tools before handing off
+## File-by-file changes (copy / logo only — no logic)
 
-Nothing is wired to AI yet. No persona cards, no editor, no test runner — those come in Stages 2, 4, and 5 respectively.
+**`index.html`**
+- `<title>` → "AskUsers — stress-test features against your users"
+- meta description → "Stress-test feature ideas against AI-powered user personas."
+- og:title → "AskUsers", og:description → "Stress-test features against your users."
 
-I'll pause here for your review before starting Stage 2 (Panel screen).
+**`src/components/layout/AppSidebar.tsx`**
+- Drop `Music2` import.
+- Replace logo block with the new inline SVG bubble + spark rays + "ASK USERS" wordmark described above.
+- aria-label updated.
+
+**`src/pages/Index.tsx` (Panel)**
+- Toast: *"Six personas max — keeps the panel focused."*
+- CTA button: "Run a session"
+- Subtitle: "Up to six user personas ready to react to your next feature."
+
+**`src/pages/RunTest.tsx`**
+- Drop `Music2` import; use `Sparkles` (already used elsewhere) for the run button icon — same warm tone, no music metaphor.
+- "No bandmates yet" → "Your panel is empty"
+- "Build at least one persona before running a jam session." → "Add at least one persona before running a session."
+- "Run a jam session" → "Run a session"
+- "Jam in progress…" → "Session in progress…"
+- "Start the jam" → "Run session"
+- Empty state CTA: "Create your first persona" (unchanged — already neutral)
+
+**`src/pages/TestDetail.tsx`**
+- "Loading the jam…" → "Loading session…"
+- "That jam's gone missing" → "Session not found"
+- "Run a new jam" → "Run a new session"
+- "The jam" → "The feature" (header above the blockquote)
+- "Run another jam" → "Run another session"
+
+**`src/pages/HistoryPage.tsx`**
+- Drop `Music2` import; use `Sparkles` for the run-new CTA.
+- "Jam history" → "Session history"
+- "Run a new jam" → "Run a new session"
+- "No jams yet" → "No sessions yet"
+- Empty body: "Run your first session and the panel's reactions will land here." (unchanged) / "Build a persona, then run a session — past sessions will live here."
+- Empty CTA: "Start a session"
+
+**`src/pages/PersonaEditor.tsx`**
+- "Six bandmates max — any more and it stops being a jam session." (×2) → "Six personas max — keeps the panel focused."
+- "{name} joined the panel." (unchanged — already research-y)
+- "{name} stepped off the stage." → "{name} removed from your panel."
+- "That persona has left the building." → "That persona isn't in your panel anymore."
+
+**`src/components/panel/PanelEmptyState.tsx`**
+- "Your stage is empty." → "Your panel is empty."
+- "Add your first bandmate to start jamming." → "Add your first persona to start asking users."
+
+**`src/components/panel/AddPersonaCard.tsx`**
+- "Bring a new bandmate on stage." → "Add another voice to your panel."
+
+**`src/components/panel/EmptyStageIllustration.tsx`** *(rename optional, keep file path stable)*
+- Keep the file name (avoids churn in imports). Update the JSDoc comment + aria-label to "An empty panel with three open seats" and rename the inner "Jam jar" comment to "Center seat with a smiley speech bubble." Visual stays — the warm jar-on-a-seat motif still reads as a friendly empty-panel scene; no metaphor break.
+
+**`src/components/settings/ApiKeyMissingDialog.tsx`**
+- Title: "Pop in your API key to get jamming" → "Add your API key to start asking users"
+
+**`src/components/settings/SettingsDialog.tsx`**
+- Export filename: `jam-session-export-${date}.json` → `askusers-export-${date}.json`
+- Import error: "Couldn't read that file. Is it a Jam Session export?" → "Couldn't read that file. Is it an AskUsers export?"
+
+**`src/lib/storage.ts`**
+- File header comment + `JamData` JSDoc → "AskUsers — localStorage data layer."
+- **Storage key migration**: keep `ROOT_KEY = "askusers-data"` going forward, but on first read also fall back to the old `jam-session-data` key and migrate it transparently (read old → write new → delete old). Existing users' personas/tests/settings are preserved with zero action needed.
+- The `JamData` *type* name stays (internal only — renaming is pure churn with no user-facing impact).
+
+**`src/lib/avatar.ts`**
+- JSDoc → "AskUsers" and the default seed fallback `"jam"` → `"askusers"`. Same DiceBear palette.
+
+**`src/index.css`**
+- Header comment "Jam Session design tokens." → "AskUsers design tokens."
+- Inline note "No dark mode — Jam Session is cream-only by design" → "No dark mode — AskUsers is cream-only by design"
+
+**Other passes**
+- Any remaining "panel's weighed in" toast (`RunTest.tsx`) stays — already on-brand.
+- No changes to: routes, component file names, types/interfaces, anthropic.ts logic, tailwind tokens, color palette, layout classes, or any prompts sent to Claude (those describe a "user persona" already — no music words there).
+
+## Out of scope (per your instructions)
+- No layout/structural changes
+- No new pages or features
+- No prompt or AI-behaviour tweaks
+- No palette or typography changes
+- No file renames (avoids import churn)
+
+## After this stage
+- Sidebar shows the new AskUsers mark + wordmark; collapsed view shows just the smiling-bubble icon
+- Every visible string reads as user research, not music
+- Existing localStorage data is auto-migrated — nobody loses their personas
+- Browser tab title and OG metadata reflect the new name
+
+I'll stop after applying these — let me know if you want any wording dialled differently before I touch the code.
