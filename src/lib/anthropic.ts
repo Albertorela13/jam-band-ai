@@ -47,11 +47,51 @@ export class InvalidJsonResponseError extends Error {
   }
 }
 
+/** A file attachment to include alongside the text prompt. */
+export interface Attachment {
+  /** Original file name, for display only. */
+  name: string;
+  /** MIME type — image/png, image/jpeg, image/gif, image/webp, or application/pdf. */
+  mediaType: string;
+  /** Base64-encoded file content (no data-URL prefix). */
+  data: string;
+  /** Pre-built object URL for image previews (revoked on removal). */
+  previewUrl?: string;
+}
+
+/** Supported MIME types for uploads. */
+export const SUPPORTED_MIME_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf"] as const;
+
+export type SupportedMimeType = (typeof SUPPORTED_MIME_TYPES)[number];
+
+export function isSupportedMimeType(type: string): type is SupportedMimeType {
+  return (SUPPORTED_MIME_TYPES as readonly string[]).includes(type);
+}
+
+/** Read a File and return an Attachment (base64, no data-URL prefix). */
+export async function fileToAttachment(file: File): Promise<Attachment> {
+  const data = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(",")[1]); // strip "data:...;base64,"
+    };
+    reader.onerror = () => reject(new Error("Could not read file."));
+    reader.readAsDataURL(file);
+  });
+
+  const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
+
+  return { name: file.name, mediaType: file.type, data, previewUrl };
+}
+
 interface CallClaudeOptions {
   apiKey?: string;
   model?: ModelId;
   system: string;
   user: string;
+  /** Optional file attachments sent before the text content. */
+  attachments?: Attachment[];
   maxTokens?: number;
 }
 
@@ -61,6 +101,7 @@ export async function callClaude({
   model,
   system,
   user,
+  attachments,
   maxTokens = 2000,
 }: CallClaudeOptions): Promise<string> {
   const settings = getSettings();
@@ -68,6 +109,34 @@ export async function callClaude({
   const chosenModel = model ?? settings.model;
 
   if (!key) throw new MissingApiKeyError();
+
+  // Build user message content — multimodal when attachments are present.
+  type ContentBlock =
+    | { type: "text"; text: string }
+    | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
+    | { type: "document"; source: { type: "base64"; media_type: string; data: string } };
+
+  let userContent: string | ContentBlock[];
+
+  if (attachments && attachments.length > 0) {
+    const blocks: ContentBlock[] = attachments.map((a) => {
+      if (a.mediaType.startsWith("image/")) {
+        return {
+          type: "image",
+          source: { type: "base64", media_type: a.mediaType, data: a.data },
+        };
+      }
+      // PDF / other document
+      return {
+        type: "document",
+        source: { type: "base64", media_type: a.mediaType, data: a.data },
+      };
+    });
+    blocks.push({ type: "text", text: user });
+    userContent = blocks;
+  } else {
+    userContent = user;
+  }
 
   let response: Response;
   try {
@@ -83,7 +152,7 @@ export async function callClaude({
         model: chosenModel,
         max_tokens: maxTokens,
         system,
-        messages: [{ role: "user", content: user }],
+        messages: [{ role: "user", content: userContent }],
       }),
     });
   } catch (err) {
@@ -96,8 +165,7 @@ export async function callClaude({
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const detail =
-      data?.error?.message ?? data?.message ?? `Anthropic returned ${response.status}.`;
+    const detail = data?.error?.message ?? data?.message ?? `Anthropic returned ${response.status}.`;
     throw new AnthropicApiError(response.status, detail);
   }
 
@@ -209,7 +277,10 @@ export async function structurePersona(description: string): Promise<StructuredP
 
 /* ---------------- Run a test (one persona at a time) ---------------- */
 
-const REACTION_SYSTEM_PROMPT = (persona: Persona, feature: string) => `You are role-playing as a specific user persona reacting to a product feature. Stay fully in character. Be honest — if this feature does not serve you, say so clearly. Do not be polite to please the PM. Your job is to surface real reactions, including uncomfortable ones.
+const REACTION_SYSTEM_PROMPT = (
+  persona: Persona,
+  feature: string,
+) => `You are role-playing as a specific user persona reacting to a product feature. Stay fully in character. Be honest — if this feature does not serve you, say so clearly. Do not be polite to please the PM. Your job is to surface real reactions, including uncomfortable ones.
 
 PERSONA:
 ${JSON.stringify(persona, null, 2)}
@@ -217,7 +288,7 @@ ${JSON.stringify(persona, null, 2)}
 FEATURE BEING TESTED:
 ${feature}
 
-React as this persona. Speak in their voice. Reference their goals, pain points, and behaviour directly. Be specific, not generic.
+React as this persona. Speak in their voice. Reference their goals, pain points, and behaviour directly. Be specific, not generic.${feature.trim() ? "" : " The PM has provided visual materials (images or documents) above — react to those as the feature context."}
 
 Return ONLY valid JSON, no markdown fences, no prose outside the JSON, in this exact structure:
 
@@ -243,10 +314,12 @@ const VALID_REACTIONS: Reaction[] = ["loves", "likes", "mixed", "rejects"];
 export async function runPersonaReaction(
   persona: Persona,
   feature: string,
+  attachments?: Attachment[],
 ): Promise<TestPersonaResult> {
   const raw = await callClaude({
     system: REACTION_SYSTEM_PROMPT(persona, feature),
     user: `React to the feature described above, in character as ${persona.name}.`,
+    attachments,
     maxTokens: 1500,
   });
 
