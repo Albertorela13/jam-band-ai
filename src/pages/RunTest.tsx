@@ -218,12 +218,12 @@ const RunTest = () => {
     <div className="mx-auto max-w-3xl space-y-10">
       <div>
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/personas")}
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           disabled={running}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Panel
+          Back to personas
         </button>
         <h1 className="font-display text-4xl font-semibold tracking-tight md:text-5xl">Run a session</h1>
         <p className="mt-2 text-base text-muted-foreground">

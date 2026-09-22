@@ -41,7 +41,7 @@ const Index = () => {
       onClick={() => navigate("/test/new")}
       className="rounded-[10px] px-6 text-base transition-transform duration-200 ease-bounce hover:scale-[1.02] disabled:opacity-50"
     >
-      Run a session
+      Run test
       <ArrowRight className="h-4 w-4" />
     </Button>
   );
@@ -51,10 +51,10 @@ const Index = () => {
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="space-y-2">
           <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
-            Your Panel
+            Personas
           </h1>
           <p className="max-w-xl text-base text-muted-foreground">
-            Up to six user personas ready to react to your next feature.
+            Up to six user perspectives for exploring your next product idea.
           </p>
         </div>
 

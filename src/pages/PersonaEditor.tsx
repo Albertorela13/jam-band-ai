@@ -52,7 +52,7 @@ const PersonaEditor = () => {
   useEffect(() => {
     if (id && !existing) {
       toast("That persona isn't in your panel anymore.");
-      navigate("/", { replace: true });
+      navigate("/personas", { replace: true });
     }
   }, [id, existing, navigate]);
 
@@ -146,7 +146,7 @@ const PersonaEditor = () => {
     try {
       savePersona(persona);
       toast.success(isEditing ? "Persona updated." : `${persona.name} joined the panel.`);
-      navigate("/");
+      navigate("/personas");
     } catch (err) {
       if (err instanceof PanelFullError) {
         toast.error("Six personas max — keeps the panel focused.");
@@ -160,7 +160,7 @@ const PersonaEditor = () => {
     if (!existing) return;
     deletePersona(existing.id);
     toast(`${existing.name} removed from your panel.`);
-    navigate("/");
+    navigate("/personas");
   };
 
   const reseedAvatar = () => setAvatarSeed(newId());
@@ -171,11 +171,11 @@ const PersonaEditor = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/personas")}
           className="-ml-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to panel
+          Back to personas
         </Button>
 
         {isEditing && (

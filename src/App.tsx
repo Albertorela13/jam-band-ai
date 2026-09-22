@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index.tsx";
+import HowItWorks from "./pages/HowItWorks.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PersonaEditor from "./pages/PersonaEditor.tsx";
 import RunTest from "./pages/RunTest.tsx";
@@ -15,7 +16,8 @@ const App = () => (
     <BrowserRouter>
       <AppLayout>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<HowItWorks />} />
+          <Route path="/personas" element={<Index />} />
           <Route path="/persona/new" element={<PersonaEditor />} />
           <Route path="/persona/:id" element={<PersonaEditor />} />
           <Route path="/test/new" element={<RunTest />} />
