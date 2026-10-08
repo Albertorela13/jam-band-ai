@@ -43,8 +43,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 import {
-  AnthropicAuthError,
-  AnthropicRateLimitError,
+  ProviderAuthError,
+  ProviderRateLimitError,
   testConnection,
 } from "@/lib/anthropic";
 import {
@@ -53,7 +53,9 @@ import {
   importAll,
   resetAll,
   saveSettings,
-  type ModelId,
+  type AIProvider,
+  type AnthropicModelId,
+  type OpenAIModelId,
 } from "@/lib/storage";
 
 interface SettingsDialogProps {
@@ -68,8 +70,11 @@ type TestState =
   | { kind: "error"; message: string };
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState<ModelId>("claude-sonnet-4-6");
+  const [provider, setProvider] = useState<AIProvider>("anthropic");
+  const [anthropicApiKey, setAnthropicApiKey] = useState("");
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [anthropicModel, setAnthropicModel] = useState<AnthropicModelId>("claude-sonnet-4-6");
+  const [openaiModel, setOpenaiModel] = useState<OpenAIModelId>("gpt-5-mini");
   const [showKey, setShowKey] = useState(false);
   const [testState, setTestState] = useState<TestState>({ kind: "idle" });
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -79,33 +84,44 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   useEffect(() => {
     if (open) {
       const s = getSettings();
-      setApiKey(s.anthropic_api_key);
-      setModel(s.model);
+      setProvider(s.provider);
+      setAnthropicApiKey(s.anthropic_api_key);
+      setOpenaiApiKey(s.openai_api_key);
+      setAnthropicModel(s.model);
+      setOpenaiModel(s.openai_model);
       setShowKey(false);
       setTestState({ kind: "idle" });
     }
   }, [open]);
 
   const handleTestConnection = async () => {
+    const apiKey = provider === "openai" ? openaiApiKey : anthropicApiKey;
+    const model = provider === "openai" ? openaiModel : anthropicModel;
     if (!apiKey.trim()) {
       setTestState({ kind: "error", message: "Add a key first." });
       return;
     }
     setTestState({ kind: "loading" });
     try {
-      await testConnection(apiKey.trim(), model);
+      await testConnection(provider, apiKey.trim(), model);
       setTestState({ kind: "success" });
     } catch (err) {
       let msg = "That didn't work";
-      if (err instanceof AnthropicAuthError) msg = "That key didn't work";
-      else if (err instanceof AnthropicRateLimitError) msg = "Rate-limited — try again in a minute";
+      if (err instanceof ProviderAuthError) msg = "That key didn't work";
+      else if (err instanceof ProviderRateLimitError) msg = "Rate-limited — try again in a minute";
       else if (err instanceof Error) msg = err.message;
       setTestState({ kind: "error", message: msg });
     }
   };
 
   const handleSave = () => {
-    saveSettings({ anthropic_api_key: apiKey.trim(), model });
+    saveSettings({
+      provider,
+      anthropic_api_key: anthropicApiKey.trim(),
+      model: anthropicModel,
+      openai_api_key: openaiApiKey.trim(),
+      openai_model: openaiModel,
+    });
     toast.success("Settings saved.");
     onOpenChange(false);
   };
@@ -137,8 +153,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       const result = importAll(parsed);
       // Refresh local form from possibly-updated settings.
       const s = getSettings();
-      setApiKey(s.anthropic_api_key);
-      setModel(s.model);
+      setProvider(s.provider);
+      setAnthropicApiKey(s.anthropic_api_key);
+      setOpenaiApiKey(s.openai_api_key);
+      setAnthropicModel(s.model);
+      setOpenaiModel(s.openai_model);
       if (result.droppedPersonas > 0) {
         toast.warning(
           `Imported, but ${result.droppedPersonas} persona${result.droppedPersonas === 1 ? "" : "s"} dropped (six max).`,
@@ -153,8 +172,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const handleResetConfirm = () => {
     resetAll();
-    setApiKey("");
-    setModel("claude-sonnet-4-6");
+    setProvider("anthropic");
+    setAnthropicApiKey("");
+    setOpenaiApiKey("");
+    setAnthropicModel("claude-sonnet-4-6");
+    setOpenaiModel("gpt-5-mini");
     setResetConfirmOpen(false);
     toast.success("Everything wiped.");
     onOpenChange(false);
@@ -168,24 +190,43 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Settings</DialogTitle>
-            <DialogDescription>Stored locally in your browser. Nothing leaves your machine except calls to Anthropic.</DialogDescription>
+            <DialogDescription>Stored locally in your browser. Nothing leaves your machine except calls to your selected AI provider.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-2">
+            <section className="space-y-2">
+              <Label htmlFor="provider" className="text-sm font-medium">AI provider</Label>
+              <Select value={provider} onValueChange={(value) => {
+                setProvider(value as AIProvider);
+                setShowKey(false);
+                setTestState({ kind: "idle" });
+              }}>
+                <SelectTrigger id="provider" className="rounded-[10px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="anthropic">Anthropic</SelectItem>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                </SelectContent>
+              </Select>
+            </section>
+
+            <Separator />
+
             {/* API key */}
             <section className="space-y-2">
               <Label htmlFor="api-key" className="text-sm font-medium">
-                Anthropic API key
+                {provider === "openai" ? "OpenAI API key" : "Anthropic API key"}
               </Label>
               <p className="text-xs text-muted-foreground">
                 Get one at{" "}
                 <a
-                  href="https://console.anthropic.com"
+                  href={provider === "openai" ? "https://platform.openai.com/api-keys" : "https://console.anthropic.com"}
                   target="_blank"
                   rel="noreferrer"
                   className="text-secondary underline-offset-2 hover:underline"
                 >
-                  console.anthropic.com
+                  {provider === "openai" ? "platform.openai.com" : "console.anthropic.com"}
                 </a>
                 . Stored locally in your browser only.
               </p>
@@ -194,12 +235,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   <Input
                     id="api-key"
                     type={showKey ? "text" : "password"}
-                    value={apiKey}
+                    value={provider === "openai" ? openaiApiKey : anthropicApiKey}
                     onChange={(e) => {
-                      setApiKey(e.target.value);
+                      if (provider === "openai") setOpenaiApiKey(e.target.value);
+                      else setAnthropicApiKey(e.target.value);
                       setTestState({ kind: "idle" });
                     }}
-                    placeholder="sk-ant-..."
+                    placeholder={provider === "openai" ? "sk-..." : "sk-ant-..."}
                     className="pr-10 font-mono text-sm"
                     autoComplete="off"
                   />
@@ -244,20 +286,37 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             {/* Model */}
             <section className="space-y-2">
               <Label htmlFor="model" className="text-sm font-medium">
-                Model
+                {provider === "openai" ? "OpenAI model" : "Anthropic model"}
               </Label>
-              <Select value={model} onValueChange={(v) => setModel(v as ModelId)}>
+              <Select
+                value={provider === "openai" ? openaiModel : anthropicModel}
+                onValueChange={(value) => {
+                  if (provider === "openai") setOpenaiModel(value as OpenAIModelId);
+                  else setAnthropicModel(value as AnthropicModelId);
+                }}
+              >
                 <SelectTrigger id="model" className="rounded-[10px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="claude-sonnet-4-6">Claude Sonnet 4.6 (default)</SelectItem>
-                  <SelectItem value="claude-opus-4-7">Claude Opus 4.7</SelectItem>
-                  <SelectItem value="claude-haiku-4-5-20251001">Claude Haiku 4.5</SelectItem>
+                  {provider === "openai" ? (
+                    <>
+                      <SelectItem value="gpt-5-mini">GPT-5 mini (default)</SelectItem>
+                      <SelectItem value="gpt-5.4-mini">GPT-5.4 mini</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="claude-sonnet-4-6">Claude Sonnet 4.6 (default)</SelectItem>
+                      <SelectItem value="claude-opus-4-7">Claude Opus 4.7</SelectItem>
+                      <SelectItem value="claude-haiku-4-5-20251001">Claude Haiku 4.5</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Sonnet is the sweet spot. Opus is smarter and slower. Haiku is fastest and cheapest.
+                {provider === "openai"
+                  ? "GPT-5 mini is the fast, economical default. GPT-5.4 mini is the stronger option."
+                  : "Sonnet is the sweet spot. Opus is smarter and slower. Haiku is fastest and cheapest."}
               </p>
             </section>
 

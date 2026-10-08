@@ -1,5 +1,6 @@
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getSettings } from "@/lib/storage";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,8 @@ interface ApiKeyMissingDialogProps {
 }
 
 export function ApiKeyMissingDialog({ open, onOpenChange, onOpenSettings }: ApiKeyMissingDialogProps) {
+  const providerName = getSettings().provider === "openai" ? "OpenAI" : "Anthropic";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -27,7 +30,7 @@ export function ApiKeyMissingDialog({ open, onOpenChange, onOpenSettings }: ApiK
             Add your API key to start asking users
           </DialogTitle>
           <DialogDescription className="text-base text-muted-foreground">
-            Head to Settings and add your Anthropic API key. It lives in your browser only.
+            Head to Settings and add your {providerName} API key. It lives in your browser only.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-2">

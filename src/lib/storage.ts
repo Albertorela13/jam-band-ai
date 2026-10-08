@@ -43,14 +43,24 @@ export interface Test {
   created_at: string;
 }
 
-export type ModelId =
+export type AnthropicModelId =
   | "claude-sonnet-4-6"
   | "claude-opus-4-7"
   | "claude-haiku-4-5-20251001";
 
+export type OpenAIModelId = "gpt-5-mini" | "gpt-5.4-mini";
+
+export type ModelId = AnthropicModelId | OpenAIModelId;
+export type AIProvider = "anthropic" | "openai";
+
 export interface Settings {
+  /** Defaults to Anthropic so settings saved before provider support still work. */
+  provider: AIProvider;
   anthropic_api_key: string;
-  model: ModelId;
+  /** Kept under its original name for backward compatibility with existing exports. */
+  model: AnthropicModelId;
+  openai_api_key: string;
+  openai_model: OpenAIModelId;
 }
 
 export interface JamData {
@@ -67,8 +77,11 @@ const DEFAULT_DATA: JamData = {
   personas: [],
   tests: [],
   settings: {
+    provider: "anthropic",
     anthropic_api_key: "",
     model: "claude-sonnet-4-6",
+    openai_api_key: "",
+    openai_model: "gpt-5-mini",
   },
 };
 

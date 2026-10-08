@@ -1,40 +1,92 @@
 /**
- * Anthropic Claude client — direct browser calls (BYOK).
- * The user's key lives in localStorage settings; never sent anywhere else.
+ * AI client — direct browser calls (BYOK).
+ * The user's key lives in localStorage settings and is sent only to the selected provider.
  */
 
-import { getSettings, type ModelId, type Persona, type Reaction, type TestPersonaResult } from "@/lib/storage";
+import {
+  getActiveApiKey,
+  getActiveModel,
+  getSettings,
+  type AIProvider,
+  type AnthropicModelId,
+  type ModelId,
+  type OpenAIModelId,
+  type Persona,
+  type Reaction,
+  type TestPersonaResult,
+} from "@/lib/storage";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
+const OPENAI_URL = "https://api.openai.com/v1/responses";
 
 export class MissingApiKeyError extends Error {
-  constructor() {
-    super("Missing Anthropic API key");
+  constructor(provider: AIProvider = getSettings().provider) {
+    super(`Missing ${provider === "openai" ? "OpenAI" : "Anthropic"} API key`);
     this.name = "MissingApiKeyError";
   }
 }
 
-export class AnthropicAuthError extends Error {
+export class ProviderAuthError extends Error {
+  constructor(provider: AIProvider) {
+    super(`That ${provider === "openai" ? "OpenAI" : "Anthropic"} key didn't work. Check it in Settings.`);
+    this.name = "ProviderAuthError";
+  }
+}
+
+export class AnthropicAuthError extends ProviderAuthError {
   constructor() {
-    super("That key didn't work. Check it in Settings.");
+    super("anthropic");
     this.name = "AnthropicAuthError";
   }
 }
 
-export class AnthropicRateLimitError extends Error {
+export class OpenAIAuthError extends ProviderAuthError {
   constructor() {
-    super("You've hit Anthropic's rate limit. Give it a minute and try again.");
+    super("openai");
+    this.name = "OpenAIAuthError";
+  }
+}
+
+export class ProviderRateLimitError extends Error {
+  constructor(provider: AIProvider) {
+    super(`You've hit ${provider === "openai" ? "OpenAI" : "Anthropic"}'s rate limit. Give it a minute and try again.`);
+    this.name = "ProviderRateLimitError";
+  }
+}
+
+export class AnthropicRateLimitError extends ProviderRateLimitError {
+  constructor() {
+    super("anthropic");
     this.name = "AnthropicRateLimitError";
   }
 }
 
-export class AnthropicApiError extends Error {
+export class OpenAIRateLimitError extends ProviderRateLimitError {
+  constructor() {
+    super("openai");
+    this.name = "OpenAIRateLimitError";
+  }
+}
+
+export class ProviderApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  constructor(provider: AIProvider, status: number, message: string) {
     super(message);
     this.status = status;
-    this.name = "AnthropicApiError";
+    this.name = `${provider === "openai" ? "OpenAI" : "Anthropic"}ApiError`;
+  }
+}
+
+export class AnthropicApiError extends ProviderApiError {
+  constructor(status: number, message: string) {
+    super("anthropic", status, message);
+  }
+}
+
+export class OpenAIApiError extends ProviderApiError {
+  constructor(status: number, message: string) {
+    super("openai", status, message);
   }
 }
 
@@ -87,7 +139,7 @@ export async function fileToAttachment(file: File): Promise<Attachment> {
 
 interface CallClaudeOptions {
   apiKey?: string;
-  model?: ModelId;
+  model?: AnthropicModelId;
   system: string;
   user: string;
   /** Optional file attachments sent before the text content. */
@@ -108,7 +160,7 @@ export async function callClaude({
   const key = apiKey ?? settings.anthropic_api_key;
   const chosenModel = model ?? settings.model;
 
-  if (!key) throw new MissingApiKeyError();
+  if (!key) throw new MissingApiKeyError("anthropic");
 
   // Build user message content — multimodal when attachments are present.
   type ContentBlock =
@@ -174,6 +226,133 @@ export async function callClaude({
   return text;
 }
 
+interface JsonSchema {
+  name: string;
+  schema: Record<string, unknown>;
+}
+
+interface CallOpenAIOptions {
+  apiKey?: string;
+  model?: OpenAIModelId;
+  system: string;
+  user: string;
+  attachments?: Attachment[];
+  maxTokens?: number;
+  jsonSchema?: JsonSchema;
+}
+
+function openAIInput(user: string, attachments?: Attachment[]) {
+  if (!attachments?.length) return user;
+
+  const content = attachments.map((attachment) =>
+    attachment.mediaType.startsWith("image/")
+      ? {
+          type: "input_image",
+          image_url: `data:${attachment.mediaType};base64,${attachment.data}`,
+        }
+      : {
+          type: "input_file",
+          filename: attachment.name,
+          file_data: `data:${attachment.mediaType};base64,${attachment.data}`,
+        },
+  );
+  content.push({ type: "input_text", text: user });
+  return [{ role: "user", content }];
+}
+
+/** Extracts text from the Responses API's convenience field or output blocks. */
+export function extractOpenAIOutputText(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const response = data as {
+    output_text?: unknown;
+    output?: Array<{ content?: Array<{ type?: string; text?: unknown }> }>;
+  };
+  if (typeof response.output_text === "string" && response.output_text.trim()) return response.output_text;
+  for (const item of response.output ?? []) {
+    for (const content of item.content ?? []) {
+      if (content.type === "output_text" && typeof content.text === "string") return content.text;
+    }
+  }
+  return undefined;
+}
+
+/** Low-level OpenAI Responses API call. Returns normalized assistant text. */
+export async function callOpenAI({
+  apiKey,
+  model,
+  system,
+  user,
+  attachments,
+  maxTokens = 2000,
+  jsonSchema,
+}: CallOpenAIOptions): Promise<string> {
+  const settings = getSettings();
+  const key = apiKey ?? settings.openai_api_key;
+  const chosenModel = model ?? settings.openai_model;
+  if (!key) throw new MissingApiKeyError("openai");
+
+  let response: Response;
+  try {
+    response = await fetch(OPENAI_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: chosenModel,
+        instructions: system,
+        input: openAIInput(user, attachments),
+        max_output_tokens: maxTokens,
+        store: false,
+        ...(jsonSchema
+          ? {
+              text: {
+                format: {
+                  type: "json_schema",
+                  name: jsonSchema.name,
+                  strict: true,
+                  schema: jsonSchema.schema,
+                },
+              },
+            }
+          : {}),
+      }),
+    });
+  } catch (err) {
+    throw new OpenAIApiError(0, err instanceof Error ? err.message : "Network error");
+  }
+
+  if (response.status === 401) throw new OpenAIAuthError();
+  if (response.status === 429) throw new OpenAIRateLimitError();
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const detail = data?.error?.message ?? data?.message ?? `OpenAI returned ${response.status}.`;
+    throw new OpenAIApiError(response.status, detail);
+  }
+
+  const text = extractOpenAIOutputText(data);
+  if (!text) throw new OpenAIApiError(response.status, "Empty response from model.");
+  return text;
+}
+
+interface CallAiOptions {
+  system: string;
+  user: string;
+  attachments?: Attachment[];
+  maxTokens?: number;
+  jsonSchema?: JsonSchema;
+}
+
+/** Uses the provider selected in locally stored Settings. */
+async function callAi(options: CallAiOptions): Promise<string> {
+  const settings = getSettings();
+  if (!getActiveApiKey(settings).trim()) throw new MissingApiKeyError(settings.provider);
+  if (settings.provider === "openai") return callOpenAI({ ...options, model: getActiveModel(settings) as OpenAIModelId });
+  return callClaude({ ...options, model: getActiveModel(settings) as AnthropicModelId });
+}
+
 /**
  * Pulls the first JSON object out of a model response (in case the model
  * wrapped it in fences despite instructions). Throws InvalidJsonResponseError
@@ -203,15 +382,20 @@ function parseJsonStrict<T>(raw: string): T {
 
 /* ---------------- Test connection ---------------- */
 
-/** Sends a tiny ping to verify the key + model. Resolves on success. */
-export async function testConnection(apiKey: string, model: ModelId): Promise<void> {
-  await callClaude({
+/** Sends a tiny ping to verify the selected provider key + model. Resolves on success. */
+export async function testConnection(provider: AIProvider, apiKey: string, model: ModelId): Promise<void> {
+  const options = {
     apiKey,
     model,
     system: "You are a connectivity checker. Reply with the single word: ok",
     user: "ping",
     maxTokens: 10,
-  });
+  };
+  if (provider === "openai") {
+    await callOpenAI({ ...options, model: model as OpenAIModelId, maxTokens: 64 });
+    return;
+  }
+  await callClaude({ ...options, model: model as AnthropicModelId });
 }
 
 /* ---------------- Structure a persona ---------------- */
@@ -227,6 +411,26 @@ export interface StructuredPersona {
   quote: string;
   gaps: string[];
 }
+
+const STRUCTURED_PERSONA_SCHEMA: JsonSchema = {
+  name: "structured_persona",
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["name", "role", "company", "goals", "pain_points", "behaviour", "voice", "quote", "gaps"],
+    properties: {
+      name: { type: "string" },
+      role: { type: "string" },
+      company: { type: "string" },
+      goals: { type: "array", items: { type: "string" } },
+      pain_points: { type: "array", items: { type: "string" } },
+      behaviour: { type: "string" },
+      voice: { type: "string" },
+      quote: { type: "string" },
+      gaps: { type: "array", items: { type: "string" } },
+    },
+  },
+};
 
 const STRUCTURE_SYSTEM_PROMPT = `You are an expert product research assistant helping product managers build rich, realistic user personas.
 
@@ -256,10 +460,11 @@ Rules:
 - gaps: empty array if the description was rich; up to 4 items if sparse`;
 
 export async function structurePersona(description: string): Promise<StructuredPersona> {
-  const raw = await callClaude({
+  const raw = await callAi({
     system: STRUCTURE_SYSTEM_PROMPT,
     user: description,
     maxTokens: 1500,
+    jsonSchema: STRUCTURED_PERSONA_SCHEMA,
   });
   const parsed = parseJsonStrict<StructuredPersona>(raw);
   return {
@@ -316,7 +521,7 @@ export async function runPersonaReaction(
   feature: string,
   attachments?: Attachment[],
 ): Promise<TestPersonaResult> {
-  const raw = await callClaude({
+  const raw = await callAi({
     system: REACTION_SYSTEM_PROMPT(persona, feature),
     user: `React to the feature described above, in character as ${persona.name}.`,
     attachments,

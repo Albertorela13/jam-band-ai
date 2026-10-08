@@ -1,11 +1,11 @@
 import { createContext, useCallback, useContext, type ReactNode } from "react";
-import { getSettings } from "@/lib/storage";
+import { getActiveApiKey, getSettings } from "@/lib/storage";
 
 interface AppDialogsContextValue {
   /** Open the Settings dialog. */
   openSettings: () => void;
   /**
-   * Returns true if an Anthropic API key is present.
+   * Returns true if the selected provider's API key is present.
    * If not, opens the "Pop in your API key" prompt and returns false.
    * Use this before any AI-triggering action.
    */
@@ -26,7 +26,7 @@ export function AppDialogsProvider({
   onOpenKeyPrompt,
 }: AppDialogsProviderProps) {
   const ensureApiKey = useCallback(() => {
-    const key = getSettings().anthropic_api_key?.trim();
+    const key = getActiveApiKey(getSettings()).trim();
     if (!key) {
       onOpenKeyPrompt();
       return false;
