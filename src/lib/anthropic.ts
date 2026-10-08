@@ -90,6 +90,23 @@ export class OpenAIApiError extends ProviderApiError {
   }
 }
 
+export class OpenAIIncompleteResponseError extends OpenAIApiError {
+  constructor(status: number, reason?: string) {
+    super(
+      status,
+      `OpenAI stopped before completing its response${reason ? ` (${reason})` : ""}. Try again.`,
+    );
+    this.name = "OpenAIIncompleteResponseError";
+  }
+}
+
+export class OpenAIRefusalError extends OpenAIApiError {
+  constructor(status: number) {
+    super(status, "OpenAI declined this request. Try changing the description and try again.");
+    this.name = "OpenAIRefusalError";
+  }
+}
+
 export class InvalidJsonResponseError extends Error {
   raw: string;
   constructor(raw: string) {
@@ -276,6 +293,22 @@ export function extractOpenAIOutputText(data: unknown): string | undefined {
   return undefined;
 }
 
+function getOpenAIIncompleteReason(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const reason = (data as { incomplete_details?: { reason?: unknown } }).incomplete_details?.reason;
+  return reason === "max_output_tokens" || reason === "content_filter" ? reason : undefined;
+}
+
+function hasOpenAIRefusal(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const response = data as {
+    output?: Array<{ content?: Array<{ type?: string; refusal?: unknown }> }>;
+  };
+  return response.output?.some((item) =>
+    item.content?.some((content) => content.type === "refusal" && typeof content.refusal === "string"),
+  ) ?? false;
+}
+
 /** Low-level OpenAI Responses API call. Returns normalized assistant text. */
 export async function callOpenAI({
   apiKey,
@@ -330,6 +363,13 @@ export async function callOpenAI({
   if (!response.ok) {
     const detail = data?.error?.message ?? data?.message ?? `OpenAI returned ${response.status}.`;
     throw new OpenAIApiError(response.status, detail);
+  }
+
+  if (data?.status === "incomplete") {
+    throw new OpenAIIncompleteResponseError(response.status, getOpenAIIncompleteReason(data));
+  }
+  if (hasOpenAIRefusal(data)) {
+    throw new OpenAIRefusalError(response.status);
   }
 
   const text = extractOpenAIOutputText(data);

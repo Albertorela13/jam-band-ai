@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { extractOpenAIOutputText, testConnection } from "@/lib/anthropic";
+import {
+  callOpenAI,
+  extractOpenAIOutputText,
+  OpenAIIncompleteResponseError,
+  OpenAIRefusalError,
+  testConnection,
+} from "@/lib/anthropic";
 import { getActiveApiKey, getActiveModel, getSettings, saveSettings } from "@/lib/storage";
 
 afterEach(() => {
@@ -55,5 +61,66 @@ describe("OpenAI Responses API", () => {
 
     const request = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(request.max_output_tokens).toBe(64);
+  });
+});
+
+describe("OpenAI response handling", () => {
+  const openAIOptions = {
+    apiKey: "sk-openai-test",
+    model: "gpt-5-mini" as const,
+    system: "Return JSON.",
+    user: "Nora Patel, product designer.",
+  };
+
+  it("returns text from a completed OpenAI response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ status: "completed", output_text: '{"name":"Nora"}' }), { status: 200 }),
+      ),
+    );
+
+    await expect(callOpenAI(openAIOptions)).resolves.toBe('{"name":"Nora"}');
+  });
+
+  it("does not parse partial output from an incomplete OpenAI response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            status: "incomplete",
+            incomplete_details: { reason: "max_output_tokens" },
+            output_text: '{"name":"Nora',
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    await expect(callOpenAI(openAIOptions)).rejects.toMatchObject({
+      name: "OpenAIIncompleteResponseError",
+      message: "OpenAI stopped before completing its response (max_output_tokens). Try again.",
+    } satisfies Partial<OpenAIIncompleteResponseError>);
+  });
+
+  it("surfaces an OpenAI refusal instead of treating it as malformed JSON", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            status: "completed",
+            output: [{ content: [{ type: "refusal", refusal: "I cannot help with that." }] }],
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    await expect(callOpenAI(openAIOptions)).rejects.toMatchObject({
+      name: "OpenAIRefusalError",
+      message: "OpenAI declined this request. Try changing the description and try again.",
+    } satisfies Partial<OpenAIRefusalError>);
   });
 });
