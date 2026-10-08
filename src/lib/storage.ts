@@ -184,6 +184,14 @@ export function getSettings(): Settings {
   return read().settings;
 }
 
+export function getActiveApiKey(settings = getSettings()): string {
+  return settings.provider === "openai" ? settings.openai_api_key : settings.anthropic_api_key;
+}
+
+export function getActiveModel(settings = getSettings()): ModelId {
+  return settings.provider === "openai" ? settings.openai_model : settings.model;
+}
+
 export function saveSettings(settings: Settings): Settings {
   const data = read();
   data.settings = settings;
